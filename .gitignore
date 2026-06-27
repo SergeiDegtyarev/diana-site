@@ -12,7 +12,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-data
+.data
 public/uploads/*
 !public/uploads/.gitkeep
 dist
