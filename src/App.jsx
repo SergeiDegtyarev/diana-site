@@ -5,6 +5,8 @@ import ScrollToTop from './components/ScrollToTop';
 import Home from './pages/Home';
 import Works from './pages/Works';
 import WorkDetail from './pages/WorkDetail';
+import Interiors from './pages/Interiors';
+import InteriorDetail from './pages/InteriorDetail';
 import Biography from './pages/Biography';
 import Contacts from './pages/Contacts';
 import Admin from './pages/Admin';
@@ -19,6 +21,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/works" element={<Works />} />
           <Route path="/works/:slug" element={<WorkDetail />} />
+          <Route path="/interiors" element={<Interiors />} />
+          <Route path="/interiors/:slug" element={<InteriorDetail />} />
           <Route path="/biography" element={<Biography />} />
           <Route path="/contacts" element={<Contacts />} />
           <Route path="/admin" element={<Admin />} />

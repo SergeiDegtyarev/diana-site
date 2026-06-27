@@ -1,16 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { useSiteContent } from "@/hooks/useSiteContent";
 
 const navLinks = [
-  { label: "Работы", path: "/works" },
+  { label: "Картины", path: "/works" },
+  { label: "Интерьеры", path: "/interiors" },
   { label: "Биография", path: "/biography" },
   { label: "Контакты", path: "/contacts" },
 ];
 
 const easing = [0.16, 1, 0.3, 1];
+
+const isActivePath = (pathname, path) => pathname === path || pathname.startsWith(`${path}/`);
 
 export default function Navigation() {
   const [scrolled, setScrolled] = useState(false);
@@ -30,7 +33,9 @@ export default function Navigation() {
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [mobileOpen]);
 
   return (
@@ -51,20 +56,22 @@ export default function Navigation() {
           </Link>
 
           <div className="hidden md:flex items-center gap-10">
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`text-sm tracking-wide transition-opacity duration-500 ${
-                  location.pathname === link.path
-                    ? "text-[#121212]"
-                    : "text-[#121212]/50 hover:text-[#121212]"
-                }`}
-                style={{ transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)" }}
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const active = isActivePath(location.pathname, link.path);
+
+              return (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={`text-sm tracking-wide transition-opacity duration-500 ${
+                    active ? "text-[#121212]" : "text-[#121212]/50 hover:text-[#121212]"
+                  }`}
+                  style={{ transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)" }}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
           </div>
 
           <button
@@ -86,26 +93,28 @@ export default function Navigation() {
             transition={{ duration: 0.5, ease: easing }}
             className="fixed inset-0 z-40 bg-white flex flex-col items-center justify-center gap-8"
           >
-            {navLinks.map((link, i) => (
-              <motion.div
-                key={link.path}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                transition={{ duration: 0.5, delay: i * 0.08, ease: easing }}
-              >
-                <Link
-                  to={link.path}
-                  className={`font-display text-3xl tracking-tight transition-opacity duration-500 ${
-                    location.pathname === link.path
-                      ? "text-[#121212]"
-                      : "text-[#121212]/40 hover:text-[#121212]"
-                  }`}
+            {navLinks.map((link, i) => {
+              const active = isActivePath(location.pathname, link.path);
+
+              return (
+                <motion.div
+                  key={link.path}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.5, delay: i * 0.08, ease: easing }}
                 >
-                  {link.label}
-                </Link>
-              </motion.div>
-            ))}
+                  <Link
+                    to={link.path}
+                    className={`font-display text-3xl tracking-tight transition-opacity duration-500 ${
+                      active ? "text-[#121212]" : "text-[#121212]/40 hover:text-[#121212]"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                </motion.div>
+              );
+            })}
           </motion.div>
         )}
       </AnimatePresence>

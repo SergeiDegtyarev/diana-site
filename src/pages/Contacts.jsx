@@ -6,33 +6,41 @@ import { useSiteContent } from "@/hooks/useSiteContent";
 
 const easing = [0.16, 1, 0.3, 1];
 
+const getInitialMessage = (work, project) => {
+  if (work) return `Здравствуйте, интересует картина "${work}".`;
+  if (project) return `Здравствуйте, хочу обсудить интерьерный проект "${project}".`;
+  return "";
+};
+
 export default function Contacts() {
   const [searchParams] = useSearchParams();
   const requestedWork = searchParams.get("work");
+  const requestedProject = searchParams.get("project");
   const [sent, setSent] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [form, setForm] = useState({
     name: "",
     email: "",
-    message: requestedWork ? `Здравствуйте, интересует работа "${requestedWork}".` : "",
+    message: getInitialMessage(requestedWork, requestedProject),
   });
   const { settings } = useSiteContent();
 
   useEffect(() => {
-    if (!requestedWork) return;
+    if (!requestedWork && !requestedProject) return;
     setForm((currentForm) => {
       if (currentForm.message) return currentForm;
       return {
         ...currentForm,
-        message: `Здравствуйте, интересует работа "${requestedWork}".`,
+        message: getInitialMessage(requestedWork, requestedProject),
       };
     });
-  }, [requestedWork]);
+  }, [requestedProject, requestedWork]);
 
   usePageMeta({
     title: "Контакты — Диана Ренц",
-    description: "Связаться с художницей Дианой Ренц по вопросам работ, выставок и визита в мастерскую.",
+    description:
+      "Связаться с Дианой Ренц по вопросам картин, интерьерных проектов, выставок и визита в мастерскую.",
   });
 
   const handleSubmit = async (e) => {
@@ -47,7 +55,7 @@ export default function Contacts() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
-          workTitle: requestedWork || "",
+          workTitle: requestedWork || requestedProject || "",
         }),
       });
       const result = await response.json().catch(() => ({}));
@@ -67,7 +75,6 @@ export default function Contacts() {
   return (
     <div className="pt-28 md:pt-36 pb-24 md:pb-40 min-h-screen">
       <div className="px-6 md:px-12 lg:px-20">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -81,7 +88,6 @@ export default function Contacts() {
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-16 md:gap-20">
-          {/* Large email */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -130,7 +136,6 @@ export default function Contacts() {
             </div>
           </motion.div>
 
-          {/* Contact form */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -178,7 +183,7 @@ export default function Contacts() {
                     onChange={(e) => setForm({ ...form, message: e.target.value })}
                     rows={4}
                     className="w-full bg-transparent border-b border-[#121212]/10 pb-2 text-sm text-[#121212] placeholder:text-[#121212]/20 focus:border-[#121212]/40 focus:outline-none transition-colors duration-500 resize-none"
-                    placeholder="Интересующая работа или вопрос"
+                    placeholder="Интересующая картина, интерьерный проект или вопрос"
                     required
                   />
                 </div>

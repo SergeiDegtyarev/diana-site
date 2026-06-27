@@ -22,7 +22,7 @@ export default function FeaturedWorks() {
       >
         <div className="w-10 h-px bg-[#121212]/20 mb-6" />
         <h2 className="font-display text-2xl md:text-3xl font-light italic text-[#121212]">
-          Избранные работы
+          Избранные картины
         </h2>
       </motion.div>
 
@@ -86,7 +86,7 @@ export default function FeaturedWorks() {
           className="inline-block text-xs tracking-widest uppercase text-[#121212]/50 border-b border-[#121212]/10 pb-1 hover:text-[#121212] hover:border-[#121212]/30 transition-all duration-700"
           style={{ transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)" }}
         >
-          Все работы
+          Все картины
         </Link>
       </motion.div>
     </section>

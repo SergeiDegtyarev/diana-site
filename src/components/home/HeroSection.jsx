@@ -72,7 +72,7 @@ export default function HeroSection() {
             className="inline-block text-xs tracking-widest uppercase text-[#121212] border-b border-[#121212]/20 pb-1 hover:border-[#121212] transition-all duration-700"
             style={{ transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)" }}
           >
-            Смотреть работы
+            Смотреть картины
           </Link>
         </motion.div>
       </motion.div>

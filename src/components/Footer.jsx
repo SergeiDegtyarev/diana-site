@@ -15,12 +15,18 @@ export default function Footer() {
           </span>
         </div>
 
-        <div className="flex items-center gap-8">
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
           <Link
             to="/works"
             className="text-xs text-[#121212]/40 hover:text-[#121212] transition-opacity duration-500"
           >
-            Работы
+            Картины
+          </Link>
+          <Link
+            to="/interiors"
+            className="text-xs text-[#121212]/40 hover:text-[#121212] transition-opacity duration-500"
+          >
+            Интерьеры
           </Link>
           <Link
             to="/biography"

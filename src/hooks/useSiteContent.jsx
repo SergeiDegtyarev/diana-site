@@ -9,7 +9,7 @@ const uniqueImages = (images) =>
 
 const normalizeWork = (work, index) => {
   const defaultWork = DEFAULT_SITE_CONTENT.works[index] || {};
-  const title = work?.title || defaultWork.title || "Новая работа";
+  const title = work?.title || defaultWork.title || "Новая картина";
   const status = getWorkStatus(work);
   const images = uniqueImages([
     work?.image || defaultWork.image,
@@ -36,8 +36,48 @@ const normalizeWork = (work, index) => {
   };
 };
 
+const sortByOrder = (items) =>
+  [...items].sort((a, b) => {
+    const orderA = Number.isFinite(Number(a?.order)) ? Number(a.order) : 0;
+    const orderB = Number.isFinite(Number(b?.order)) ? Number(b.order) : 0;
+    if (orderA !== orderB) return orderA - orderB;
+    return String(a?.title || "").localeCompare(String(b?.title || ""), "ru");
+  });
+
+const normalizeInterior = (project, index) => {
+  const defaultProject = DEFAULT_SITE_CONTENT.interiors?.[index] || {};
+  const title = project?.title || defaultProject.title || "Новый интерьер";
+  const images = uniqueImages([
+    project?.image || defaultProject.image,
+    ...(Array.isArray(project?.images) ? project.images : []),
+    ...(Array.isArray(defaultProject.images) ? defaultProject.images : []),
+  ]);
+
+  return {
+    ...defaultProject,
+    ...project,
+    id: project?.id || defaultProject.id || `interior-${Date.now().toString(36)}-${index}`,
+    slug: project?.slug || defaultProject.slug || slugify(title),
+    title,
+    type: project?.type ?? defaultProject.type ?? "",
+    location: project?.location ?? defaultProject.location ?? "",
+    year: project?.year ?? defaultProject.year ?? "",
+    status: project?.status ?? defaultProject.status ?? "",
+    image: project?.image || defaultProject.image || images[0] || "",
+    previewImage: project?.previewImage || project?.image || defaultProject.previewImage || defaultProject.image,
+    images,
+    order: Number.isFinite(Number(project?.order)) ? Number(project.order) : (index + 1) * 10,
+    featured: Boolean(project?.featured ?? defaultProject.featured),
+    published: project?.published !== false,
+    description: project?.description ?? defaultProject.description ?? "",
+  };
+};
+
 const mergeContent = (content) => {
   const worksSource = Array.isArray(content?.works) ? content.works : DEFAULT_SITE_CONTENT.works;
+  const interiorsSource = Array.isArray(content?.interiors)
+    ? content.interiors
+    : DEFAULT_SITE_CONTENT.interiors || [];
 
   return {
     settings: {
@@ -45,6 +85,7 @@ const mergeContent = (content) => {
       ...(content?.settings || {}),
     },
     works: sortWorks(worksSource.map(normalizeWork)),
+    interiors: sortByOrder(interiorsSource.map(normalizeInterior)),
   };
 };
 
@@ -162,6 +203,36 @@ export function useSiteContent() {
     [content, saveContent]
   );
 
+  const saveInterior = useCallback(
+    (project) => {
+      const normalizedProject = {
+        ...project,
+        slug: project.slug || slugify(project.title),
+        previewImage: project.previewImage || project.image,
+        images: uniqueImages([project.image, ...(Array.isArray(project.images) ? project.images : [])]),
+        order: Number(project.order) || 0,
+        featured: Boolean(project.featured),
+        published: project.published !== false,
+      };
+      const exists = content.interiors.some((item) => item.id === normalizedProject.id);
+      const interiors = exists
+        ? content.interiors.map((item) => (item.id === normalizedProject.id ? normalizedProject : item))
+        : [...content.interiors, normalizedProject];
+
+      return saveContent({ ...content, interiors: sortByOrder(interiors) });
+    },
+    [content, saveContent]
+  );
+
+  const deleteInterior = useCallback(
+    (id) =>
+      saveContent({
+        ...content,
+        interiors: content.interiors.filter((project) => project.id !== id),
+      }),
+    [content, saveContent]
+  );
+
   const deleteWork = useCallback(
     (id) =>
       saveContent({
@@ -177,12 +248,15 @@ export function useSiteContent() {
     content,
     settings: content.settings,
     works: content.works,
+    interiors: content.interiors,
     isLoadingContent,
     contentError,
     loadContent,
     updateSettings,
     saveWork,
     deleteWork,
+    saveInterior,
+    deleteInterior,
     resetContent,
   };
 }

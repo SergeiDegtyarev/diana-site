@@ -145,17 +145,24 @@ const getRequestOrigin = (req) => {
 };
 
 const buildSitemap = (origin) => {
-  const { works } = getSiteContent();
+  const { works, interiors } = getSiteContent();
   const now = new Date().toISOString();
   const urls = [
     { loc: "/", priority: "1.0" },
     { loc: "/works", priority: "0.9" },
+    { loc: "/interiors", priority: "0.8" },
     { loc: "/biography", priority: "0.7" },
     { loc: "/contacts", priority: "0.6" },
     ...(Array.isArray(works) ? works : [])
       .filter((work) => work?.slug || work?.id)
       .map((work) => ({
         loc: `/works/${encodeURIComponent(work.slug || work.id)}`,
+        priority: "0.8",
+      })),
+    ...(Array.isArray(interiors) ? interiors : [])
+      .filter((project) => project?.published !== false && (project?.slug || project?.id))
+      .map((project) => ({
+        loc: `/interiors/${encodeURIComponent(project.slug || project.id)}`,
         priority: "0.8",
       })),
   ];

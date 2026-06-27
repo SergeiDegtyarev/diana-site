@@ -51,8 +51,8 @@ export default function Works() {
   }, [categoryTabs, selectedCategory, showCategories]);
 
   usePageMeta({
-    title: "Работы — Диана Ренц",
-    description: "Галерея работ Дианы Ренц: живопись, цены, наличие и проданные работы.",
+    title: "Картины — Диана Ренц",
+    description: "Галерея картин Дианы Ренц: живопись, цены, наличие и проданные картины.",
     image: works[0]?.previewImage || works[0]?.image,
   });
 
@@ -66,7 +66,7 @@ export default function Works() {
         >
           <div className="w-10 h-px bg-[#121212]/20 mb-6" />
           <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-light italic text-[#121212]">
-            Работы
+            Картины
           </h1>
         </motion.div>
       </div>

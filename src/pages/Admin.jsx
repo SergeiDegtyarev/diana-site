@@ -26,6 +26,23 @@ const emptyWork = {
   description: "",
 };
 
+const emptyInterior = {
+  id: "",
+  slug: "",
+  title: "",
+  type: "Частный интерьер",
+  location: "",
+  year: "2026",
+  status: "Концепция",
+  image: "/assets/interior-dressing-1.png",
+  previewImage: "/assets/interior-dressing-1.png",
+  images: ["/assets/interior-dressing-1.png"],
+  order: "",
+  featured: false,
+  published: true,
+  description: "",
+};
+
 const aspectOptions = [
   { value: "aspect-[4/3]", label: "4:3" },
   { value: "aspect-[3/4]", label: "3:4" },
@@ -56,6 +73,13 @@ const makeWorkId = (title) => {
     .replace(/^-|-$/g, "");
 
   return `work-${slug || fallback}`;
+};
+
+const makeInteriorId = (title) => {
+  const fallback = Date.now().toString(36);
+  const slug = slugify(title);
+
+  return `interior-${slug || fallback}`;
 };
 
 const uniqueImages = (images) =>
@@ -184,11 +208,23 @@ function ToggleField({ label, checked, onChange }) {
 
 export default function Admin() {
   const { isAuthenticated, isCheckingSession, login, logout } = useAdminSession();
-  const { settings, works, updateSettings, saveWork, deleteWork, resetContent } = useSiteContent();
+  const {
+    settings,
+    works,
+    interiors,
+    updateSettings,
+    saveWork,
+    deleteWork,
+    saveInterior,
+    deleteInterior,
+    resetContent,
+  } = useSiteContent();
   const [activeTab, setActiveTab] = useState("works");
   const [settingsDraft, setSettingsDraft] = useState(settings);
   const [editingWorkId, setEditingWorkId] = useState(null);
   const [workDraft, setWorkDraft] = useState(emptyWork);
+  const [editingInteriorId, setEditingInteriorId] = useState(null);
+  const [interiorDraft, setInteriorDraft] = useState(emptyInterior);
   const [loginDraft, setLoginDraft] = useState({ username: "", password: "" });
   const [authError, setAuthError] = useState("");
   const [saveError, setSaveError] = useState("");
@@ -196,6 +232,7 @@ export default function Admin() {
   const [inquiries, setInquiries] = useState([]);
   const [isLoadingInquiries, setIsLoadingInquiries] = useState(false);
   const [galleryImageUrl, setGalleryImageUrl] = useState("");
+  const [interiorGalleryImageUrl, setInteriorGalleryImageUrl] = useState("");
   const [uploadingField, setUploadingField] = useState(null);
   const successTimeoutRef = useRef(null);
   const soldCount = useMemo(() => works.filter((work) => work.sold).length, [works]);
@@ -300,6 +337,10 @@ export default function Admin() {
     setWorkDraft((draft) => ({ ...draft, [key]: value }));
   };
 
+  const updateInteriorDraft = (key, value) => {
+    setInteriorDraft((draft) => ({ ...draft, [key]: value }));
+  };
+
   const addWorkImage = (image) => {
     const cleanImage = String(image || "").trim();
     if (!cleanImage) return;
@@ -325,6 +366,31 @@ export default function Admin() {
     }));
   };
 
+  const addInteriorImage = (image) => {
+    const cleanImage = String(image || "").trim();
+    if (!cleanImage) return;
+
+    setInteriorDraft((draft) => ({
+      ...draft,
+      images: uniqueImages([...(draft.images || []), cleanImage]),
+    }));
+    setInteriorGalleryImageUrl("");
+  };
+
+  const updateInteriorImage = (index, value) => {
+    setInteriorDraft((draft) => ({
+      ...draft,
+      images: (draft.images || []).map((image, imageIndex) => (imageIndex === index ? value : image)),
+    }));
+  };
+
+  const removeInteriorImage = (index) => {
+    setInteriorDraft((draft) => ({
+      ...draft,
+      images: (draft.images || []).filter((_, imageIndex) => imageIndex !== index),
+    }));
+  };
+
   const startNewWork = () => {
     setEditingWorkId(null);
     setWorkDraft({ ...emptyWork, order: (works.length + 1) * 10 });
@@ -332,11 +398,25 @@ export default function Admin() {
     setActiveTab("works");
   };
 
+  const startNewInterior = () => {
+    setEditingInteriorId(null);
+    setInteriorDraft({ ...emptyInterior, order: (interiors.length + 1) * 10 });
+    setInteriorGalleryImageUrl("");
+    setActiveTab("interiors");
+  };
+
   const startEditWork = (work) => {
     setEditingWorkId(work.id);
     setWorkDraft({ ...work, price: work.price || "", status: work.status || (work.sold ? "sold" : "available") });
     setGalleryImageUrl("");
     setActiveTab("works");
+  };
+
+  const startEditInterior = (project) => {
+    setEditingInteriorId(project.id);
+    setInteriorDraft({ ...project });
+    setInteriorGalleryImageUrl("");
+    setActiveTab("interiors");
   };
 
   const handleLogin = async (event) => {
@@ -359,7 +439,7 @@ export default function Admin() {
       setSuccessMessage("");
       await saveWork({ ...workDraft, id, slug });
       setEditingWorkId(id);
-      showSuccess(isNewWork ? "Работа добавлена" : "Изменения по работе сохранены");
+      showSuccess(isNewWork ? "Картина добавлена" : "Изменения по картине сохранены");
     } catch (error) {
       setSaveError(error.message);
     }
@@ -370,9 +450,39 @@ export default function Admin() {
       setSaveError("");
       setSuccessMessage("");
       await deleteWork(id);
-      showSuccess("Работа удалена");
+      showSuccess("Картина удалена");
       if (editingWorkId === id) {
         startNewWork();
+      }
+    } catch (error) {
+      setSaveError(error.message);
+    }
+  };
+
+  const handleSaveInterior = async (event) => {
+    event.preventDefault();
+    const isNewProject = !editingInteriorId;
+    const id = editingInteriorId || makeInteriorId(interiorDraft.title);
+    const slug = interiorDraft.slug || slugify(interiorDraft.title);
+    try {
+      setSaveError("");
+      setSuccessMessage("");
+      await saveInterior({ ...interiorDraft, id, slug });
+      setEditingInteriorId(id);
+      showSuccess(isNewProject ? "Интерьер добавлен" : "Изменения по интерьеру сохранены");
+    } catch (error) {
+      setSaveError(error.message);
+    }
+  };
+
+  const handleDeleteInterior = async (id) => {
+    try {
+      setSaveError("");
+      setSuccessMessage("");
+      await deleteInterior(id);
+      showSuccess("Интерьер удалён");
+      if (editingInteriorId === id) {
+        startNewInterior();
       }
     } catch (error) {
       setSaveError(error.message);
@@ -486,7 +596,7 @@ export default function Admin() {
                 Админка
               </h1>
               <p className="text-sm text-[#121212]/45 mt-3">
-                {works.length} работ · {soldCount} продано
+                {works.length} картин · {soldCount} продано
               </p>
             </div>
 
@@ -505,7 +615,7 @@ export default function Admin() {
                 className="inline-flex items-center gap-2 min-h-11 px-4 border border-[#121212]/15 text-xs tracking-widest uppercase text-[#121212] hover:border-[#121212]/50 transition-colors"
               >
                 <Plus size={15} />
-                Новая работа
+                Новая картина
               </button>
               <button
                 type="button"
@@ -538,7 +648,8 @@ export default function Admin() {
 
         <div className="flex border-b border-[#121212]/10 mb-10">
           {[
-            { id: "works", label: "Работы" },
+            { id: "works", label: "Картины" },
+            { id: "interiors", label: "Интерьеры" },
             { id: "inquiries", label: newInquiryCount ? `Заявки ${newInquiryCount}` : "Заявки" },
             { id: "settings", label: "Сайт" },
           ].map((tab) => (
@@ -615,10 +726,49 @@ export default function Admin() {
                 isUploading={uploadingField === "aboutImage"}
               />
               <ToggleField
-                label="Показывать категории работ"
+                label="Показывать категории картин"
                 checked={settingsDraft.showWorkCategories !== false}
                 onChange={(value) => updateSettingsDraft("showWorkCategories", value)}
               />
+              <div className="border-t border-[#121212]/10 pt-8 space-y-8">
+                <div>
+                  <span className="block text-[11px] uppercase tracking-widest text-[#121212]/35 mb-2">
+                    Раздел интерьеров
+                  </span>
+                  <p className="text-xs text-[#121212]/35">
+                    Эти тексты выводятся на странице «Интерьеры» над списком проектов.
+                  </p>
+                </div>
+                <TextField
+                  label="Заголовок"
+                  value={settingsDraft.interiorsTitle || ""}
+                  onChange={(value) => updateSettingsDraft("interiorsTitle", value)}
+                />
+                <TextAreaField
+                  label="Подзаголовок"
+                  rows={3}
+                  value={settingsDraft.interiorsSubtitle || ""}
+                  onChange={(value) => updateSettingsDraft("interiorsSubtitle", value)}
+                />
+                <TextAreaField
+                  label="Вводный текст"
+                  rows={4}
+                  value={settingsDraft.interiorsIntro || ""}
+                  onChange={(value) => updateSettingsDraft("interiorsIntro", value)}
+                />
+                <TextAreaField
+                  label="Услуги, по одной строке"
+                  rows={6}
+                  value={settingsDraft.interiorsServices || ""}
+                  onChange={(value) => updateSettingsDraft("interiorsServices", value)}
+                />
+                <TextAreaField
+                  label="Заметка про искусство"
+                  rows={4}
+                  value={settingsDraft.interiorsArtNote || ""}
+                  onChange={(value) => updateSettingsDraft("interiorsArtNote", value)}
+                />
+              </div>
             </div>
 
             <div className="lg:col-span-4 space-y-8">
@@ -721,6 +871,237 @@ export default function Admin() {
               </button>
             </div>
           </form>
+        ) : activeTab === "interiors" ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            <form onSubmit={handleSaveInterior} className="lg:col-span-4 space-y-7 lg:sticky lg:top-28 self-start">
+              <div className="flex items-center justify-between gap-4 border-b border-[#121212]/10 pb-4">
+                <h2 className="font-display text-2xl italic text-[#121212]">
+                  {editingInteriorId ? "Редактирование" : "Новый интерьер"}
+                </h2>
+                {editingInteriorId && (
+                  <button
+                    type="button"
+                    onClick={startNewInterior}
+                    className="text-xs text-[#121212]/40 hover:text-[#121212] transition-colors"
+                  >
+                    Очистить
+                  </button>
+                )}
+              </div>
+
+              <TextField
+                label="Название"
+                value={interiorDraft.title}
+                onChange={(value) => {
+                  updateInteriorDraft("title", value);
+                  if (!editingInteriorId && !interiorDraft.slug) {
+                    updateInteriorDraft("slug", slugify(value));
+                  }
+                }}
+                required
+              />
+              <TextField
+                label="Адрес страницы"
+                value={interiorDraft.slug}
+                onChange={(value) => updateInteriorDraft("slug", slugify(value))}
+              />
+              <div className="grid grid-cols-2 gap-5">
+                <TextField
+                  label="Тип"
+                  value={interiorDraft.type}
+                  onChange={(value) => updateInteriorDraft("type", value)}
+                />
+                <TextField
+                  label="Локация"
+                  value={interiorDraft.location}
+                  onChange={(value) => updateInteriorDraft("location", value)}
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-5">
+                <TextField
+                  label="Год"
+                  value={interiorDraft.year}
+                  onChange={(value) => updateInteriorDraft("year", value)}
+                />
+                <TextField
+                  label="Порядок"
+                  type="number"
+                  value={interiorDraft.order}
+                  onChange={(value) => updateInteriorDraft("order", value)}
+                />
+                <TextField
+                  label="Статус"
+                  value={interiorDraft.status}
+                  onChange={(value) => updateInteriorDraft("status", value)}
+                />
+              </div>
+              <ImageUploadField
+                label="Главное изображение"
+                value={interiorDraft.image}
+                onChange={(value) => updateInteriorDraft("image", value)}
+                onUpload={(file) =>
+                  uploadImage(
+                    file,
+                    (result) => {
+                      setInteriorDraft((draft) => ({
+                        ...draft,
+                        image: result.url,
+                        previewImage: result.previewUrl || result.url,
+                        images: uniqueImages([result.url, ...(draft.images || [])]),
+                      }));
+                    },
+                    "interiorImage"
+                  )
+                }
+                isUploading={uploadingField === "interiorImage"}
+              />
+              <TextField
+                label="Превью для списка"
+                value={interiorDraft.previewImage}
+                onChange={(value) => updateInteriorDraft("previewImage", value)}
+              />
+
+              <div className="space-y-4 border-t border-[#121212]/10 pt-6">
+                <div>
+                  <span className="block text-[11px] uppercase tracking-widest text-[#121212]/35 mb-2">
+                    Галерея интерьера
+                  </span>
+                  <p className="text-xs text-[#121212]/35">
+                    Добавляйте рендеры, планы, детали материалов или разные ракурсы проекта.
+                  </p>
+                </div>
+
+                {(interiorDraft.images || []).map((image, index) => (
+                  <div key={`${image}-${index}`} className="flex items-center gap-3">
+                    <img
+                      src={image}
+                      alt=""
+                      className="h-14 w-14 shrink-0 object-cover border border-[#121212]/10"
+                    />
+                    <input
+                      type="text"
+                      value={image}
+                      onChange={(event) => updateInteriorImage(index, event.target.value)}
+                      className="min-w-0 flex-1 bg-transparent border-b border-[#121212]/10 pb-2 text-sm text-[#121212] focus:border-[#121212]/50 focus:outline-none transition-colors duration-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeInteriorImage(index)}
+                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center border border-[#121212]/10 text-[#121212]/45 hover:text-[#121212] hover:border-[#121212]/40 transition-colors"
+                      aria-label="Удалить изображение из галереи"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                ))}
+
+                <ImageUploadField
+                  label="Новое изображение галереи"
+                  value={interiorGalleryImageUrl}
+                  onChange={setInteriorGalleryImageUrl}
+                  onUpload={(file) =>
+                    uploadImage(file, (result) => addInteriorImage(result.url), "interiorGalleryImage")
+                  }
+                  isUploading={uploadingField === "interiorGalleryImage"}
+                />
+                {interiorGalleryImageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => addInteriorImage(interiorGalleryImageUrl)}
+                    className="inline-flex items-center gap-2 min-h-10 px-4 border border-[#121212]/15 text-xs tracking-widest uppercase text-[#121212]/70 hover:text-[#121212] hover:border-[#121212]/45 transition-colors"
+                  >
+                    <Plus size={15} />
+                    Добавить ссылку
+                  </button>
+                )}
+              </div>
+
+              <TextAreaField
+                label="Описание"
+                rows={5}
+                value={interiorDraft.description}
+                onChange={(value) => updateInteriorDraft("description", value)}
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <ToggleField
+                  label="Избранное"
+                  checked={interiorDraft.featured}
+                  onChange={(value) => updateInteriorDraft("featured", value)}
+                />
+                <ToggleField
+                  label="Опубликовано"
+                  checked={interiorDraft.published !== false}
+                  onChange={(value) => updateInteriorDraft("published", value)}
+                />
+              </div>
+              <button
+                type="submit"
+                className="inline-flex items-center gap-2 min-h-11 px-5 bg-[#121212] text-white text-xs tracking-widest uppercase hover:bg-[#121212]/80 transition-colors"
+              >
+                <Save size={15} />
+                Сохранить интерьер
+              </button>
+            </form>
+
+            <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-5">
+              {interiors.map((project) => (
+                <article key={project.id} className="border border-[#121212]/10">
+                  <div className="relative overflow-hidden bg-[#F7F7F7]">
+                    <img
+                      src={project.previewImage || project.image}
+                      alt={project.title}
+                      className="w-full aspect-[4/3] object-cover"
+                    />
+                    {project.published === false && (
+                      <span className="absolute top-4 left-4 bg-white/90 px-3 py-1 text-[10px] tracking-widest uppercase text-[#121212]/70">
+                        Скрыто
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-5">
+                    <div className="flex items-start justify-between gap-4 mb-3">
+                      <div>
+                        <h3 className="text-sm text-[#121212]">{project.title}</h3>
+                        <p className="text-xs text-[#121212]/35 mt-1">
+                          {[project.type, project.location, project.year, project.status]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </p>
+                      </div>
+                      {project.featured && (
+                        <span className="shrink-0 text-[10px] tracking-widest uppercase text-[#121212]/35">
+                          Избранное
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-xs text-[#121212]/55">
+                        {project.published === false ? "Не опубликовано" : "Опубликовано"}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => startEditInterior(project)}
+                          className="inline-flex items-center justify-center h-10 w-10 border border-[#121212]/10 text-[#121212]/50 hover:text-[#121212] hover:border-[#121212]/40 transition-colors"
+                          aria-label="Редактировать интерьер"
+                        >
+                          <Edit3 size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteInterior(project.id)}
+                          className="inline-flex items-center justify-center h-10 w-10 border border-[#121212]/10 text-[#121212]/50 hover:text-[#121212] hover:border-[#121212]/40 transition-colors"
+                          aria-label="Удалить интерьер"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
         ) : activeTab === "inquiries" ? (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
             <div className="lg:col-span-3">
@@ -730,7 +1111,7 @@ export default function Admin() {
                   Заявки
                 </h2>
                 <p className="text-sm text-[#121212]/45 leading-[1.7] mb-6">
-                  Здесь сохраняются обращения с формы контактов и запросы по конкретным работам.
+                  Здесь сохраняются обращения с формы контактов и запросы по конкретным картинам.
                 </p>
                 <button
                   type="button"
@@ -804,7 +1185,7 @@ export default function Admin() {
 
                     {inquiry.workTitle && (
                       <p className="text-xs uppercase tracking-widest text-[#121212]/30 mb-3">
-                        Работа: {inquiry.workTitle}
+                        Картина/проект: {inquiry.workTitle}
                       </p>
                     )}
                     <p className="text-sm text-[#121212]/65 leading-[1.8] whitespace-pre-wrap">
@@ -820,7 +1201,7 @@ export default function Admin() {
             <form onSubmit={handleSaveWork} className="lg:col-span-4 space-y-7 lg:sticky lg:top-28 self-start">
               <div className="flex items-center justify-between gap-4 border-b border-[#121212]/10 pb-4">
                 <h2 className="font-display text-2xl italic text-[#121212]">
-                  {editingWorkId ? "Редактирование" : "Новая работа"}
+                  {editingWorkId ? "Редактирование" : "Новая картина"}
                 </h2>
                 {editingWorkId && (
                   <button
@@ -917,7 +1298,7 @@ export default function Admin() {
               <div className="space-y-4 border-t border-[#121212]/10 pt-6">
                 <div>
                   <span className="block text-[11px] uppercase tracking-widest text-[#121212]/35 mb-2">
-                    Галерея работы
+                    Галерея картины
                   </span>
                   <p className="text-xs text-[#121212]/35">
                     Первое изображение обычно используется как основной вид. Можно добавить детали, фото в интерьере или фрагменты фактуры.
@@ -1000,7 +1381,7 @@ export default function Admin() {
                 className="inline-flex items-center gap-2 min-h-11 px-5 bg-[#121212] text-white text-xs tracking-widest uppercase hover:bg-[#121212]/80 transition-colors"
               >
                 <Save size={15} />
-                Сохранить работу
+                Сохранить картину
               </button>
             </form>
 
@@ -1062,7 +1443,7 @@ export default function Admin() {
                           type="button"
                           onClick={() => startEditWork(work)}
                           className="inline-flex items-center justify-center h-10 w-10 border border-[#121212]/10 text-[#121212]/50 hover:text-[#121212] hover:border-[#121212]/40 transition-colors"
-                          aria-label="Редактировать работу"
+                          aria-label="Редактировать картину"
                         >
                           <Edit3 size={15} />
                         </button>
@@ -1070,7 +1451,7 @@ export default function Admin() {
                           type="button"
                           onClick={() => handleDeleteWork(work.id)}
                           className="inline-flex items-center justify-center h-10 w-10 border border-[#121212]/10 text-[#121212]/50 hover:text-[#121212] hover:border-[#121212]/40 transition-colors"
-                          aria-label="Удалить работу"
+                          aria-label="Удалить картину"
                         >
                           <Trash2 size={15} />
                         </button>
