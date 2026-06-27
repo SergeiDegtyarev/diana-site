@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import ImageGalleryViewer from "@/components/ImageGalleryViewer";
 import PageNotFound from "@/lib/PageNotFound";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { formatPrice, useSiteContent } from "@/hooks/useSiteContent";
@@ -12,7 +13,6 @@ export default function InteriorDetail() {
   const { slug } = useParams();
   const { settings, interiors, works } = useSiteContent();
   const project = interiors.find((item) => item.slug === slug || item.id === slug);
-  const [activeImage, setActiveImage] = useState("");
   const projectImages = project?.images?.length ? project.images : project?.image ? [project.image] : [];
   const relatedWorkIds = new Set(project?.relatedWorkIds || []);
   const relatedWorks = works.filter((work) => relatedWorkIds.has(work.id) || relatedWorkIds.has(work.slug));
@@ -45,10 +45,6 @@ export default function InteriorDetail() {
       : null,
   });
 
-  useEffect(() => {
-    setActiveImage(project?.image || "");
-  }, [project?.id, project?.image]);
-
   if (!project || project.published === false) {
     return <PageNotFound />;
   }
@@ -75,33 +71,11 @@ export default function InteriorDetail() {
           transition={{ duration: 0.9, ease: easing }}
           className="lg:col-span-8"
         >
-          <img
-            src={activeImage || project.image}
+          <ImageGalleryViewer
+            images={projectImages}
+            primaryImage={project.image}
             alt={project.title}
-            className="w-full max-h-[78vh] object-contain bg-[#F7F7F7]"
           />
-          {projectImages.length > 1 && (
-            <div className="mt-4 grid grid-cols-4 sm:grid-cols-6 gap-3">
-              {projectImages.map((image, index) => {
-                const isActive = (activeImage || project.image) === image;
-
-                return (
-                  <button
-                    key={`${image}-${index}`}
-                    type="button"
-                    onClick={() => setActiveImage(image)}
-                    aria-label={`Показать изображение ${index + 1}`}
-                    aria-pressed={isActive}
-                    className={`relative aspect-square overflow-hidden border transition-colors ${
-                      isActive ? "border-[#121212]/60" : "border-[#121212]/10 hover:border-[#121212]/35"
-                    }`}
-                  >
-                    <img src={image} alt="" className="h-full w-full object-cover" loading="lazy" />
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </motion.div>
 
         <motion.aside

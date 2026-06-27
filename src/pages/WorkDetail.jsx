@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import ImageGalleryViewer from "@/components/ImageGalleryViewer";
 import PageNotFound from "@/lib/PageNotFound";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { formatPrice, useSiteContent } from "@/hooks/useSiteContent";
@@ -12,7 +13,6 @@ export default function WorkDetail() {
   const { slug } = useParams();
   const { settings, works, interiors } = useSiteContent();
   const work = works.find((item) => item.slug === slug || item.id === slug);
-  const [activeImage, setActiveImage] = useState("");
   const workImages = work?.images?.length ? work.images : work?.image ? [work.image] : [];
   const relatedInteriors = work
     ? interiors.filter(
@@ -48,10 +48,6 @@ export default function WorkDetail() {
       : null,
   });
 
-  useEffect(() => {
-    setActiveImage(work?.image || "");
-  }, [work?.id, work?.image]);
-
   if (!work) {
     return <PageNotFound />;
   }
@@ -77,38 +73,11 @@ export default function WorkDetail() {
           transition={{ duration: 0.9, ease: easing }}
           className="lg:col-span-7"
         >
-          <img
-            src={activeImage || work.image}
+          <ImageGalleryViewer
+            images={workImages}
+            primaryImage={work.image}
             alt={work.title}
-            className="w-full max-h-[78vh] object-contain bg-[#F7F7F7]"
           />
-          {workImages.length > 1 && (
-            <div className="mt-4 grid grid-cols-4 sm:grid-cols-6 gap-3">
-              {workImages.map((image, index) => {
-                const isActive = (activeImage || work.image) === image;
-
-                return (
-                  <button
-                    key={`${image}-${index}`}
-                    type="button"
-                    onClick={() => setActiveImage(image)}
-                    aria-label={`Показать изображение ${index + 1}`}
-                    aria-pressed={isActive}
-                    className={`relative aspect-square overflow-hidden border transition-colors ${
-                      isActive ? "border-[#121212]/60" : "border-[#121212]/10 hover:border-[#121212]/35"
-                    }`}
-                  >
-                    <img
-                      src={image}
-                      alt=""
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </motion.div>
 
         <motion.aside
