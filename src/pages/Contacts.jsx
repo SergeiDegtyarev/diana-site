@@ -10,6 +10,8 @@ export default function Contacts() {
   const [searchParams] = useSearchParams();
   const requestedWork = searchParams.get("work");
   const [sent, setSent] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -33,16 +35,33 @@ export default function Contacts() {
     description: "Связаться с художницей Дианой Ренц по вопросам работ, выставок и визита в мастерскую.",
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name || !form.email || !form.message) return;
 
-    const subject = requestedWork ? `Запрос по работе "${requestedWork}"` : `Запрос от ${form.name}`;
-    const body = `Имя: ${form.name}\nEmail: ${form.email}\n\n${form.message}`;
-    const mailtoUrl = `mailto:${settings.contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    try {
+      setIsSending(true);
+      setSubmitError("");
+      const response = await fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          workTitle: requestedWork || "",
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
 
-    window.location.href = mailtoUrl;
-    setSent(true);
+      if (!response.ok) {
+        throw new Error(result.error || "Не удалось отправить заявку");
+      }
+
+      setSent(true);
+    } catch (error) {
+      setSubmitError(error.message);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -100,14 +119,6 @@ export default function Contacts() {
                   Instagram
                 </a>
                 <a
-                  href={settings.behanceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-[#121212]/40 hover:text-[#121212] transition-opacity duration-500"
-                >
-                  Behance
-                </a>
-                <a
                   href={settings.telegramUrl}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -133,7 +144,7 @@ export default function Contacts() {
                   Спасибо за обращение
                 </p>
                 <p className="text-sm text-[#121212]/40">
-                  Письмо подготовлено в вашем почтовом приложении.
+                  Заявка отправлена. Я свяжусь с вами по указанному email.
                 </p>
               </div>
             ) : (
@@ -173,11 +184,17 @@ export default function Contacts() {
                 </div>
                 <button
                   type="submit"
+                  disabled={isSending}
                   className="text-xs tracking-widest uppercase text-[#121212] border-b border-[#121212]/20 pb-1 hover:border-[#121212] transition-all duration-700 disabled:opacity-30 min-h-[44px] min-w-[44px]"
                   style={{ transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)" }}
                 >
-                  Открыть почту
+                  {isSending ? "Отправка..." : "Отправить"}
                 </button>
+                {submitError && (
+                  <p className="text-sm text-red-700">
+                    {submitError}
+                  </p>
+                )}
               </form>
             )}
           </motion.div>

@@ -25,7 +25,6 @@ export const DEFAULT_SITE_CONTENT = {
     studioAddress: "Санкт-Петербург, Васильевский остров",
     studioNote: "Посещение по предварительной записи",
     instagramUrl: "https://instagram.com",
-    behanceUrl: "https://behance.net",
     telegramUrl: "https://t.me",
     showWorkCategories: true,
   },

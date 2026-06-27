@@ -46,12 +46,12 @@ export default function Footer() {
             Instagram
           </a>
           <a
-            href={settings.behanceUrl}
+            href={settings.telegramUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-[#121212]/40 hover:text-[#121212] transition-opacity duration-500"
           >
-            Behance
+            Telegram
           </a>
         </div>
       </div>

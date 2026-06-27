@@ -18,6 +18,17 @@ db.exec(`
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS inquiries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    message TEXT NOT NULL,
+    work_title TEXT,
+    status TEXT NOT NULL DEFAULT 'new',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   )
 `);
 
@@ -29,6 +40,29 @@ const saveContentStatement = db.prepare(`
     value = excluded.value,
     updated_at = CURRENT_TIMESTAMP
 `);
+const createInquiryStatement = db.prepare(`
+  INSERT INTO inquiries (name, email, message, work_title, status)
+  VALUES (@name, @email, @message, @workTitle, 'new')
+`);
+const listInquiriesStatement = db.prepare(`
+  SELECT
+    id,
+    name,
+    email,
+    message,
+    work_title AS workTitle,
+    status,
+    created_at AS createdAt,
+    updated_at AS updatedAt
+  FROM inquiries
+  ORDER BY datetime(created_at) DESC, id DESC
+`);
+const updateInquiryStatusStatement = db.prepare(`
+  UPDATE inquiries
+  SET status = @status, updated_at = CURRENT_TIMESTAMP
+  WHERE id = @id
+`);
+const deleteInquiryStatement = db.prepare("DELETE FROM inquiries WHERE id = ?");
 
 export function getSiteContent() {
   const row = getContentStatement.get("main");
@@ -49,4 +83,21 @@ export function saveSiteContent(content) {
     key: "main",
     value: JSON.stringify(content),
   });
+}
+
+export function createInquiry(inquiry) {
+  const result = createInquiryStatement.run(inquiry);
+  return { id: result.lastInsertRowid, ...inquiry, status: "new" };
+}
+
+export function listInquiries() {
+  return listInquiriesStatement.all();
+}
+
+export function updateInquiryStatus(id, status) {
+  updateInquiryStatusStatement.run({ id, status });
+}
+
+export function deleteInquiry(id) {
+  deleteInquiryStatement.run(id);
 }

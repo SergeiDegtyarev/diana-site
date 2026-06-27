@@ -7,7 +7,14 @@ import path from "node:path";
 import sharp from "sharp";
 import { fileURLToPath } from "node:url";
 import { clearSessionCookie, createSession, readSession, requireAdmin, setSessionCookie } from "./auth.js";
-import { getSiteContent, saveSiteContent } from "./db.js";
+import {
+  createInquiry,
+  deleteInquiry,
+  getSiteContent,
+  listInquiries,
+  saveSiteContent,
+  updateInquiryStatus,
+} from "./db.js";
 
 const app = express();
 const port = Number(process.env.API_PORT || 3001);
@@ -25,6 +32,7 @@ const httpRedirectPort = process.env.HTTP_REDIRECT_PORT ? Number(process.env.HTT
 const publicSiteUrl = (process.env.PUBLIC_SITE_URL || "https://www.diana-rents.ru").replace(/\/+$/, "");
 const compressThresholdBytes = 10 * 1024 * 1024;
 const targetCompressedBytes = 5 * 1024 * 1024;
+const inquiryStatuses = new Set(["new", "in_progress", "done"]);
 
 fs.mkdirSync(uploadsDir, { recursive: true });
 
@@ -170,6 +178,8 @@ ${items}
 `;
 };
 
+const cleanText = (value, maxLength) => String(value || "").trim().slice(0, maxLength);
+
 app.use(express.json({ limit: "2mb" }));
 
 app.get("/api/health", (_req, res) => {
@@ -196,6 +206,62 @@ app.get("/sitemap.xml", (req, res) => {
 app.put("/api/content", requireAdmin, (req, res) => {
   saveSiteContent(req.body);
   res.json(getSiteContent());
+});
+
+app.post("/api/inquiries", (req, res) => {
+  const inquiry = {
+    name: cleanText(req.body?.name, 160),
+    email: cleanText(req.body?.email, 200),
+    message: cleanText(req.body?.message, 4000),
+    workTitle: cleanText(req.body?.workTitle, 240) || null,
+  };
+
+  if (!inquiry.name || !inquiry.email || !inquiry.message) {
+    res.status(400).json({ error: "Заполните имя, email и сообщение" });
+    return;
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inquiry.email)) {
+    res.status(400).json({ error: "Укажите корректный email" });
+    return;
+  }
+
+  const created = createInquiry(inquiry);
+  res.status(201).json({ ok: true, inquiry: created });
+});
+
+app.get("/api/inquiries", requireAdmin, (_req, res) => {
+  res.json({ inquiries: listInquiries() });
+});
+
+app.patch("/api/inquiries/:id", requireAdmin, (req, res) => {
+  const id = Number(req.params.id);
+  const status = cleanText(req.body?.status, 40);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ error: "Некорректный ID заявки" });
+    return;
+  }
+
+  if (!inquiryStatuses.has(status)) {
+    res.status(400).json({ error: "Некорректный статус заявки" });
+    return;
+  }
+
+  updateInquiryStatus(id, status);
+  res.json({ inquiries: listInquiries() });
+});
+
+app.delete("/api/inquiries/:id", requireAdmin, (req, res) => {
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ error: "Некорректный ID заявки" });
+    return;
+  }
+
+  deleteInquiry(id);
+  res.json({ inquiries: listInquiries() });
 });
 
 app.post("/api/uploads", requireAdmin, upload.single("image"), async (req, res, next) => {

@@ -41,6 +41,12 @@ const columnOptions = [
   { value: "md:col-span-8", label: "Большая" },
 ];
 
+const inquiryStatusOptions = [
+  { value: "new", label: "Новая" },
+  { value: "in_progress", label: "В работе" },
+  { value: "done", label: "Закрыта" },
+];
+
 const makeWorkId = (title) => {
   const fallback = Date.now().toString(36);
   const slug = title
@@ -54,6 +60,20 @@ const makeWorkId = (title) => {
 
 const uniqueImages = (images) =>
   [...new Set((images || []).map((image) => String(image || "").trim()).filter(Boolean))];
+
+const formatDateTime = (value) => {
+  if (!value) return "";
+  const date = new Date(String(value).replace(" ", "T"));
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat("ru-RU", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+};
+
+const getInquiryStatusLabel = (status) =>
+  inquiryStatusOptions.find((option) => option.value === status)?.label || "Новая";
 
 function TextField({ label, value, onChange, type = "text", required = false }) {
   return (
@@ -173,10 +193,16 @@ export default function Admin() {
   const [authError, setAuthError] = useState("");
   const [saveError, setSaveError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [inquiries, setInquiries] = useState([]);
+  const [isLoadingInquiries, setIsLoadingInquiries] = useState(false);
   const [galleryImageUrl, setGalleryImageUrl] = useState("");
   const [uploadingField, setUploadingField] = useState(null);
   const successTimeoutRef = useRef(null);
   const soldCount = useMemo(() => works.filter((work) => work.sold).length, [works]);
+  const newInquiryCount = useMemo(
+    () => inquiries.filter((inquiry) => inquiry.status === "new").length,
+    [inquiries]
+  );
 
   useEffect(() => {
     setSettingsDraft(settings);
@@ -201,6 +227,69 @@ export default function Admin() {
       setSuccessMessage("");
       successTimeoutRef.current = null;
     }, 3000);
+  };
+
+  const loadInquiries = async () => {
+    try {
+      setSaveError("");
+      setIsLoadingInquiries(true);
+      const response = await fetch("/api/inquiries", { credentials: "include" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result.error || "Не удалось загрузить заявки");
+      }
+      setInquiries(result.inquiries || []);
+    } catch (error) {
+      setSaveError(error.message);
+    } finally {
+      setIsLoadingInquiries(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadInquiries();
+    }
+  }, [isAuthenticated]);
+
+  const updateInquiry = async (id, status) => {
+    try {
+      setSaveError("");
+      setSuccessMessage("");
+      const response = await fetch(`/api/inquiries/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result.error || "Не удалось обновить заявку");
+      }
+      setInquiries(result.inquiries || []);
+      showSuccess("Статус заявки обновлен");
+    } catch (error) {
+      setSaveError(error.message);
+    }
+  };
+
+  const removeInquiry = async (id) => {
+    try {
+      setSaveError("");
+      setSuccessMessage("");
+      const response = await fetch(`/api/inquiries/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result.error || "Не удалось удалить заявку");
+      }
+      setInquiries(result.inquiries || []);
+      showSuccess("Заявка удалена");
+    } catch (error) {
+      setSaveError(error.message);
+    }
   };
 
   const updateSettingsDraft = (key, value) => {
@@ -450,6 +539,7 @@ export default function Admin() {
         <div className="flex border-b border-[#121212]/10 mb-10">
           {[
             { id: "works", label: "Работы" },
+            { id: "inquiries", label: newInquiryCount ? `Заявки ${newInquiryCount}` : "Заявки" },
             { id: "settings", label: "Сайт" },
           ].map((tab) => (
             <button
@@ -559,11 +649,6 @@ export default function Admin() {
                 onChange={(value) => updateSettingsDraft("instagramUrl", value)}
               />
               <TextField
-                label="Behance"
-                value={settingsDraft.behanceUrl}
-                onChange={(value) => updateSettingsDraft("behanceUrl", value)}
-              />
-              <TextField
                 label="Telegram"
                 value={settingsDraft.telegramUrl}
                 onChange={(value) => updateSettingsDraft("telegramUrl", value)}
@@ -636,6 +721,100 @@ export default function Admin() {
               </button>
             </div>
           </form>
+        ) : activeTab === "inquiries" ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            <div className="lg:col-span-3">
+              <div className="lg:sticky lg:top-28">
+                <div className="w-10 h-px bg-[#121212]/20 mb-6" />
+                <h2 className="font-display text-2xl italic text-[#121212] mb-3">
+                  Заявки
+                </h2>
+                <p className="text-sm text-[#121212]/45 leading-[1.7] mb-6">
+                  Здесь сохраняются обращения с формы контактов и запросы по конкретным работам.
+                </p>
+                <button
+                  type="button"
+                  onClick={loadInquiries}
+                  className="inline-flex items-center gap-2 min-h-10 px-4 border border-[#121212]/15 text-xs tracking-widest uppercase text-[#121212]/70 hover:text-[#121212] hover:border-[#121212]/45 transition-colors"
+                >
+                  <RotateCcw size={15} />
+                  Обновить
+                </button>
+              </div>
+            </div>
+
+            <div className="lg:col-span-9 space-y-5">
+              {isLoadingInquiries ? (
+                <div className="py-12 text-sm text-[#121212]/40">
+                  Загрузка заявок...
+                </div>
+              ) : inquiries.length === 0 ? (
+                <div className="border border-[#121212]/10 px-5 py-10">
+                  <p className="font-display text-xl italic text-[#121212] mb-3">
+                    Заявок пока нет
+                  </p>
+                  <p className="text-sm text-[#121212]/45">
+                    Новые обращения появятся здесь после отправки формы на странице контактов.
+                  </p>
+                </div>
+              ) : (
+                inquiries.map((inquiry) => (
+                  <article key={inquiry.id} className="border border-[#121212]/10 p-5">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-5 mb-5">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-3 mb-2">
+                          <h3 className="text-sm text-[#121212]">{inquiry.name}</h3>
+                          <span className="text-[10px] uppercase tracking-widest text-[#121212]/30">
+                            {getInquiryStatusLabel(inquiry.status)}
+                          </span>
+                        </div>
+                        <a
+                          href={`mailto:${inquiry.email}`}
+                          className="text-sm text-[#121212]/50 hover:text-[#121212] transition-colors break-all"
+                        >
+                          {inquiry.email}
+                        </a>
+                        <p className="text-xs text-[#121212]/30 mt-2">
+                          {formatDateTime(inquiry.createdAt)}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <select
+                          value={inquiry.status}
+                          onChange={(event) => updateInquiry(inquiry.id, event.target.value)}
+                          className="bg-transparent border-b border-[#121212]/10 pb-2 text-sm text-[#121212] focus:border-[#121212]/50 focus:outline-none transition-colors"
+                        >
+                          {inquiryStatusOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => removeInquiry(inquiry.id)}
+                          className="inline-flex h-10 w-10 shrink-0 items-center justify-center border border-[#121212]/10 text-[#121212]/45 hover:text-[#121212] hover:border-[#121212]/40 transition-colors"
+                          aria-label="Удалить заявку"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {inquiry.workTitle && (
+                      <p className="text-xs uppercase tracking-widest text-[#121212]/30 mb-3">
+                        Работа: {inquiry.workTitle}
+                      </p>
+                    )}
+                    <p className="text-sm text-[#121212]/65 leading-[1.8] whitespace-pre-wrap">
+                      {inquiry.message}
+                    </p>
+                  </article>
+                ))
+              )}
+            </div>
+          </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
             <form onSubmit={handleSaveWork} className="lg:col-span-4 space-y-7 lg:sticky lg:top-28 self-start">
