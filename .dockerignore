@@ -4,6 +4,7 @@ dist
 .pnpm-store
 .git
 .idea
+certs
 .env
 .env.local
 npm-debug.log*

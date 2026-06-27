@@ -1,5 +1,7 @@
 import express from "express";
 import fs from "node:fs";
+import http from "node:http";
+import https from "node:https";
 import multer from "multer";
 import path from "node:path";
 import sharp from "sharp";
@@ -16,6 +18,10 @@ const distDir = path.join(rootDir, "dist");
 
 const adminUsername = process.env.ADMIN_USERNAME || "admin";
 const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+const httpsKeyPath = process.env.HTTPS_KEY_PATH;
+const httpsCertPath = process.env.HTTPS_CERT_PATH;
+const httpsCaPath = process.env.HTTPS_CA_PATH;
+const httpRedirectPort = process.env.HTTP_REDIRECT_PORT ? Number(process.env.HTTP_REDIRECT_PORT) : null;
 const compressThresholdBytes = 10 * 1024 * 1024;
 const targetCompressedBytes = 5 * 1024 * 1024;
 
@@ -214,6 +220,43 @@ app.use((error, req, res, next) => {
   });
 });
 
-app.listen(port, "0.0.0.0", () => {
-  console.log(`API listening on http://localhost:${port}`);
-});
+const createHttpsOptions = () => {
+  if (!httpsKeyPath || !httpsCertPath) {
+    return null;
+  }
+
+  const certParts = [fs.readFileSync(httpsCertPath, "utf8")];
+  if (httpsCaPath && fs.existsSync(httpsCaPath)) {
+    certParts.push(fs.readFileSync(httpsCaPath, "utf8"));
+  }
+
+  return {
+    key: fs.readFileSync(httpsKeyPath, "utf8"),
+    cert: certParts.join("\n"),
+  };
+};
+
+const httpsOptions = createHttpsOptions();
+
+if (httpsOptions) {
+  https.createServer(httpsOptions, app).listen(port, "0.0.0.0", () => {
+    console.log(`HTTPS server listening on https://localhost:${port}`);
+  });
+
+  if (httpRedirectPort) {
+    http
+      .createServer((req, res) => {
+        const host = String(req.headers.host || "").replace(/:\d+$/, "");
+        const location = `https://${host}${req.url || "/"}`;
+        res.writeHead(301, { Location: location });
+        res.end();
+      })
+      .listen(httpRedirectPort, "0.0.0.0", () => {
+        console.log(`HTTP redirect listening on http://localhost:${httpRedirectPort}`);
+      });
+  }
+} else {
+  app.listen(port, "0.0.0.0", () => {
+    console.log(`HTTP server listening on http://localhost:${port}`);
+  });
+}

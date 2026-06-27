@@ -15,6 +15,8 @@ node_modules
 .data
 public/uploads/*
 !public/uploads/.gitkeep
+certs/*
+!certs/.gitkeep
 dist
 dist-ssr
 *.local

@@ -106,7 +106,30 @@ ADMIN_PASSWORD=strong-password
 SESSION_SECRET=long-random-secret
 ```
 
-Production-контейнер слушает порт `80` и сохраняет данные в папках:
+Production-контейнер слушает порты:
+
+```text
+80  -> редирект на HTTPS
+443 -> HTTPS-сайт
+```
+
+SSL-сертификаты нужно положить в папку `certs` на сервере:
+
+```text
+certs/certificate.key
+certs/certificate.crt
+certs/certificate_ca.crt
+```
+
+`certificate.crt` — основной сертификат сайта, `certificate_ca.crt` — промежуточный/CA сертификат, `certificate.key` — приватный ключ.
+
+Права на приватный ключ:
+
+```bash
+chmod 600 certs/certificate.key
+```
+
+Данные сайта сохраняются в папках:
 
 ```text
 data/site.sqlite

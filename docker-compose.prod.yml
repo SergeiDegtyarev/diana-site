@@ -5,13 +5,19 @@ services:
       dockerfile: Dockerfile.prod
     restart: unless-stopped
     ports:
-      - "80:5173"
+      - "80:8080"
+      - "443:5173"
     volumes:
       - ./data:/app/data
       - ./public/uploads:/app/public/uploads
+      - ./certs:/app/certs:ro
     environment:
       ADMIN_USERNAME: "${ADMIN_USERNAME:?Set ADMIN_USERNAME in .env}"
       ADMIN_PASSWORD: "${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}"
       SESSION_SECRET: "${SESSION_SECRET:?Set SESSION_SECRET in .env}"
       SQLITE_PATH: "/app/data/site.sqlite"
       API_PORT: "5173"
+      HTTP_REDIRECT_PORT: "8080"
+      HTTPS_KEY_PATH: "/app/certs/certificate.key"
+      HTTPS_CERT_PATH: "/app/certs/certificate.crt"
+      HTTPS_CA_PATH: "/app/certs/certificate_ca.crt"
