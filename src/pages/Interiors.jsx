@@ -12,17 +12,44 @@ const splitLines = (value) =>
     .map((item) => item.trim())
     .filter(Boolean);
 
+const parseProcess = (value) =>
+  splitLines(value).map((line) => {
+    const [title, ...descriptionParts] = line.split("|");
+    return {
+      title: title?.trim(),
+      description: descriptionParts.join("|").trim(),
+    };
+  });
+
 export default function Interiors() {
   const { settings, interiors } = useSiteContent();
   const publishedProjects = interiors.filter((project) => project.published !== false);
   const featuredProject = publishedProjects.find((project) => project.featured) || publishedProjects[0];
   const services = splitLines(settings.interiorsServices);
+  const processSteps = parseProcess(settings.interiorsProcess);
 
   usePageMeta({
-    title: "Интерьеры — Диана Ренц",
+    title: settings.interiorsSeoTitle || "Дизайн интерьеров и подбор искусства — Диана Ренц",
     description:
-      "Интерьерные проекты Дианы Ренц: авторские концепции, подбор искусства, света, фактур и предметов для частных пространств.",
+      settings.interiorsSeoDescription ||
+      "Авторские интерьерные проекты Дианы Ренц: концепция пространства, визуализация, подбор искусства, света, фактур и предметов.",
     image: featuredProject?.previewImage || featuredProject?.image,
+    keywords: settings.interiorsSeoKeywords,
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "Service",
+      name: "Дизайн интерьеров и подбор искусства",
+      provider: {
+        "@type": "Person",
+        name: settings.artistName,
+      },
+      areaServed: settings.studioAddress || "Санкт-Петербург",
+      serviceType: "Interior design",
+      description:
+        settings.interiorsSeoDescription ||
+        "Авторские интерьерные проекты, визуализация и подбор искусства в интерьер.",
+      url: `${window.location.origin}/interiors`,
+    },
   });
 
   return (
@@ -67,6 +94,40 @@ export default function Interiors() {
       </div>
 
       <div className="px-6 md:px-12 lg:px-20">
+        {processSteps.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 36 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.9, ease: easing }}
+            className="mb-16 md:mb-28"
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
+              <div className="lg:col-span-4">
+                <div className="w-10 h-px bg-[#121212]/20 mb-6" />
+                <h2 className="font-display text-3xl md:text-4xl font-light italic text-[#121212]">
+                  Как строится проект
+                </h2>
+              </div>
+              <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8">
+                {processSteps.map((step, index) => (
+                  <article key={`${step.title}-${index}`} className="border-t border-[#121212]/10 pt-5">
+                    <span className="text-[10px] text-[#121212]/25">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <h3 className="mt-5 text-sm text-[#121212]">{step.title}</h3>
+                    {step.description && (
+                      <p className="mt-3 text-sm text-[#121212]/50 leading-[1.8]">
+                        {step.description}
+                      </p>
+                    )}
+                  </article>
+                ))}
+              </div>
+            </div>
+          </motion.section>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-12 gap-5 md:gap-6">
           {publishedProjects.map((project, index) => (
             <motion.article
@@ -110,14 +171,6 @@ export default function Interiors() {
           </div>
         )}
 
-        {settings.interiorsArtNote && (
-          <div className="mt-16 md:mt-24 max-w-2xl">
-            <div className="w-10 h-px bg-[#121212]/20 mb-6" />
-            <p className="text-sm md:text-base text-[#121212]/55 leading-[1.9]">
-              {settings.interiorsArtNote}
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );

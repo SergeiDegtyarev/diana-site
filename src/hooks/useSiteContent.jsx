@@ -70,6 +70,13 @@ const normalizeInterior = (project, index) => {
     featured: Boolean(project?.featured ?? defaultProject.featured),
     published: project?.published !== false,
     description: project?.description ?? defaultProject.description ?? "",
+    relatedWorkIds: Array.isArray(project?.relatedWorkIds)
+      ? project.relatedWorkIds.map((id) => String(id || "").trim()).filter(Boolean)
+      : Array.isArray(defaultProject.relatedWorkIds)
+        ? defaultProject.relatedWorkIds
+        : [],
+    seoTitle: project?.seoTitle ?? defaultProject.seoTitle ?? "",
+    seoDescription: project?.seoDescription ?? defaultProject.seoDescription ?? "",
   };
 };
 
@@ -213,6 +220,11 @@ export function useSiteContent() {
         order: Number(project.order) || 0,
         featured: Boolean(project.featured),
         published: project.published !== false,
+        relatedWorkIds: Array.isArray(project.relatedWorkIds)
+          ? project.relatedWorkIds.map((id) => String(id || "").trim()).filter(Boolean)
+          : [],
+        seoTitle: project.seoTitle || "",
+        seoDescription: project.seoDescription || "",
       };
       const exists = content.interiors.some((item) => item.id === normalizedProject.id);
       const interiors = exists

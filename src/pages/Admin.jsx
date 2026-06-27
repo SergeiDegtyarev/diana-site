@@ -40,6 +40,9 @@ const emptyInterior = {
   order: "",
   featured: false,
   published: true,
+  relatedWorkIds: [],
+  seoTitle: "",
+  seoDescription: "",
   description: "",
 };
 
@@ -339,6 +342,22 @@ export default function Admin() {
 
   const updateInteriorDraft = (key, value) => {
     setInteriorDraft((draft) => ({ ...draft, [key]: value }));
+  };
+
+  const toggleInteriorWork = (workId, checked) => {
+    setInteriorDraft((draft) => {
+      const currentIds = new Set(draft.relatedWorkIds || []);
+      if (checked) {
+        currentIds.add(workId);
+      } else {
+        currentIds.delete(workId);
+      }
+
+      return {
+        ...draft,
+        relatedWorkIds: [...currentIds],
+      };
+    });
   };
 
   const addWorkImage = (image) => {
@@ -763,10 +782,33 @@ export default function Admin() {
                   onChange={(value) => updateSettingsDraft("interiorsServices", value)}
                 />
                 <TextAreaField
+                  label="Процесс: этап | описание"
+                  rows={8}
+                  value={settingsDraft.interiorsProcess || ""}
+                  onChange={(value) => updateSettingsDraft("interiorsProcess", value)}
+                />
+                <TextAreaField
                   label="Заметка про искусство"
                   rows={4}
                   value={settingsDraft.interiorsArtNote || ""}
                   onChange={(value) => updateSettingsDraft("interiorsArtNote", value)}
+                />
+                <TextField
+                  label="SEO заголовок интерьеров"
+                  value={settingsDraft.interiorsSeoTitle || ""}
+                  onChange={(value) => updateSettingsDraft("interiorsSeoTitle", value)}
+                />
+                <TextAreaField
+                  label="SEO описание интерьеров"
+                  rows={4}
+                  value={settingsDraft.interiorsSeoDescription || ""}
+                  onChange={(value) => updateSettingsDraft("interiorsSeoDescription", value)}
+                />
+                <TextAreaField
+                  label="SEO ключевые слова"
+                  rows={3}
+                  value={settingsDraft.interiorsSeoKeywords || ""}
+                  onChange={(value) => updateSettingsDraft("interiorsSeoKeywords", value)}
                 />
               </div>
             </div>
@@ -1022,6 +1064,45 @@ export default function Admin() {
                 value={interiorDraft.description}
                 onChange={(value) => updateInteriorDraft("description", value)}
               />
+              <div className="space-y-4 border-t border-[#121212]/10 pt-6">
+                <div>
+                  <span className="block text-[11px] uppercase tracking-widest text-[#121212]/35 mb-2">
+                    Картины для этого интерьера
+                  </span>
+                  <p className="text-xs text-[#121212]/35">
+                    Отмеченные картины появятся на странице интерьерного проекта, а сам проект появится на страницах этих картин.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 gap-3">
+                  {works.map((work) => (
+                    <label
+                      key={work.id}
+                      className="flex items-center justify-between gap-4 border border-[#121212]/10 px-4 py-3"
+                    >
+                      <span className="text-sm text-[#121212]/60">{work.title}</span>
+                      <input
+                        type="checkbox"
+                        checked={(interiorDraft.relatedWorkIds || []).includes(work.id)}
+                        onChange={(event) => toggleInteriorWork(work.id, event.target.checked)}
+                        className="h-4 w-4 accent-[#121212]"
+                      />
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-5 border-t border-[#121212]/10 pt-6">
+                <TextField
+                  label="SEO заголовок проекта"
+                  value={interiorDraft.seoTitle || ""}
+                  onChange={(value) => updateInteriorDraft("seoTitle", value)}
+                />
+                <TextAreaField
+                  label="SEO описание проекта"
+                  rows={4}
+                  value={interiorDraft.seoDescription || ""}
+                  onChange={(value) => updateInteriorDraft("seoDescription", value)}
+                />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <ToggleField
                   label="Избранное"
