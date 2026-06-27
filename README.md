@@ -148,6 +148,13 @@ docker compose -f docker-compose.prod.yml up -d --build
 docker compose -f docker-compose.prod.yml logs -f
 ```
 
+SEO-файлы доступны по адресам:
+
+```text
+https://www.diana-rents.ru/robots.txt
+https://www.diana-rents.ru/sitemap.xml
+```
+
 ## Контактная форма
 
 Форма на странице контактов формирует письмо и открывает почтовое приложение через `mailto:`.

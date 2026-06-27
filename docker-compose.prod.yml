@@ -17,6 +17,7 @@ services:
       SESSION_SECRET: "${SESSION_SECRET:?Set SESSION_SECRET in .env}"
       SQLITE_PATH: "/app/data/site.sqlite"
       API_PORT: "5173"
+      PUBLIC_SITE_URL: "https://www.diana-rents.ru"
       HTTP_REDIRECT_PORT: "8080"
       HTTPS_KEY_PATH: "/app/certs/certificate.key"
       HTTPS_CERT_PATH: "/app/certs/certificate.crt"

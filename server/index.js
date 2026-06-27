@@ -22,6 +22,7 @@ const httpsKeyPath = process.env.HTTPS_KEY_PATH;
 const httpsCertPath = process.env.HTTPS_CERT_PATH;
 const httpsCaPath = process.env.HTTPS_CA_PATH;
 const httpRedirectPort = process.env.HTTP_REDIRECT_PORT ? Number(process.env.HTTP_REDIRECT_PORT) : null;
+const publicSiteUrl = (process.env.PUBLIC_SITE_URL || "https://www.diana-rents.ru").replace(/\/+$/, "");
 const compressThresholdBytes = 10 * 1024 * 1024;
 const targetCompressedBytes = 5 * 1024 * 1024;
 
@@ -118,6 +119,57 @@ const getPreviewImage = async (file, baseFilename) => {
   return { buffer, filename, size: buffer.length };
 };
 
+const escapeXml = (value) =>
+  String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+
+const getRequestOrigin = (req) => {
+  if (publicSiteUrl) {
+    return publicSiteUrl;
+  }
+
+  const protocol = req.headers["x-forwarded-proto"] || (httpsKeyPath && httpsCertPath ? "https" : req.protocol);
+  return `${protocol}://${req.get("host")}`;
+};
+
+const buildSitemap = (origin) => {
+  const { works } = getSiteContent();
+  const now = new Date().toISOString();
+  const urls = [
+    { loc: "/", priority: "1.0" },
+    { loc: "/works", priority: "0.9" },
+    { loc: "/biography", priority: "0.7" },
+    { loc: "/contacts", priority: "0.6" },
+    ...(Array.isArray(works) ? works : [])
+      .filter((work) => work?.slug || work?.id)
+      .map((work) => ({
+        loc: `/works/${encodeURIComponent(work.slug || work.id)}`,
+        priority: "0.8",
+      })),
+  ];
+
+  const items = urls
+    .map(
+      ({ loc, priority }) => `  <url>
+    <loc>${escapeXml(`${origin}${loc}`)}</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>${priority}</priority>
+  </url>`
+    )
+    .join("\n");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${items}
+</urlset>
+`;
+};
+
 app.use(express.json({ limit: "2mb" }));
 
 app.get("/api/health", (_req, res) => {
@@ -126,6 +178,19 @@ app.get("/api/health", (_req, res) => {
 
 app.get("/api/content", (_req, res) => {
   res.json(getSiteContent());
+});
+
+app.get("/robots.txt", (req, res) => {
+  const origin = getRequestOrigin(req);
+  res.type("text/plain").send(`User-agent: *
+Allow: /
+
+Sitemap: ${origin}/sitemap.xml
+`);
+});
+
+app.get("/sitemap.xml", (req, res) => {
+  res.type("application/xml").send(buildSitemap(getRequestOrigin(req)));
 });
 
 app.put("/api/content", requireAdmin, (req, res) => {
