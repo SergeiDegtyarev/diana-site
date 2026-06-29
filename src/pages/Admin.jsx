@@ -67,6 +67,14 @@ const inquiryStatusOptions = [
   { value: "done", label: "Закрыта" },
 ];
 
+const settingsSections = [
+  { id: "home", label: "Главная" },
+  { id: "biography", label: "Биография" },
+  { id: "contacts", label: "Контакты" },
+  { id: "interiors", label: "Интерьеры" },
+  { id: "seo", label: "SEO" },
+];
+
 const makeWorkId = (title) => {
   const fallback = Date.now().toString(36);
   const slug = title
@@ -223,6 +231,7 @@ export default function Admin() {
     resetContent,
   } = useSiteContent();
   const [activeTab, setActiveTab] = useState("works");
+  const [settingsSection, setSettingsSection] = useState("home");
   const [settingsDraft, setSettingsDraft] = useState(settings);
   const [editingWorkId, setEditingWorkId] = useState(null);
   const [workDraft, setWorkDraft] = useState(emptyWork);
@@ -665,26 +674,28 @@ export default function Admin() {
           </div>
         )}
 
-        <div className="flex border-b border-[#121212]/10 mb-10">
-          {[
-            { id: "works", label: "Картины" },
-            { id: "interiors", label: "Интерьеры" },
-            { id: "inquiries", label: newInquiryCount ? `Заявки ${newInquiryCount}` : "Заявки" },
-            { id: "settings", label: "Сайт" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`min-h-11 px-5 text-xs tracking-widest uppercase border-b transition-colors ${
-                activeTab === tab.id
-                  ? "border-[#121212] text-[#121212]"
-                  : "border-transparent text-[#121212]/35 hover:text-[#121212]"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="-mx-6 mb-10 overflow-x-auto px-6 md:mx-0 md:px-0">
+          <div className="flex min-w-max border-b border-[#121212]/10">
+            {[
+              { id: "works", label: "Картины" },
+              { id: "interiors", label: "Интерьеры" },
+              { id: "inquiries", label: newInquiryCount ? `Заявки ${newInquiryCount}` : "Заявки" },
+              { id: "settings", label: "Сайт" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`min-h-11 px-5 text-xs tracking-widest uppercase border-b transition-colors ${
+                  activeTab === tab.id
+                    ? "border-[#121212] text-[#121212]"
+                    : "border-transparent text-[#121212]/35 hover:text-[#121212]"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {activeTab === "settings" ? (
@@ -700,216 +711,322 @@ export default function Admin() {
                 setSaveError(error.message);
               }
             }}
-            className="grid grid-cols-1 lg:grid-cols-12 gap-10"
+            className="space-y-10"
           >
-            <div className="lg:col-span-5 space-y-8">
-              <TextField
-                label="Имя в шапке"
-                value={settingsDraft.artistName}
-                onChange={(value) => updateSettingsDraft("artistName", value)}
-                required
-              />
-              <div className="grid grid-cols-2 gap-5">
-                <TextField
-                  label="Имя"
-                  value={settingsDraft.heroFirstName}
-                  onChange={(value) => updateSettingsDraft("heroFirstName", value)}
-                />
-                <TextField
-                  label="Фамилия"
-                  value={settingsDraft.heroLastName}
-                  onChange={(value) => updateSettingsDraft("heroLastName", value)}
-                />
-              </div>
-              <TextAreaField
-                label="Подзаголовок"
-                value={settingsDraft.heroSubtitle}
-                onChange={(value) => updateSettingsDraft("heroSubtitle", value)}
-              />
-              <ImageUploadField
-                label="Hero изображение"
-                value={settingsDraft.heroImage}
-                onChange={(value) => updateSettingsDraft("heroImage", value)}
-                onUpload={(file) =>
-                  uploadImage(file, (result) => updateSettingsDraft("heroImage", result.url), "heroImage")
-                }
-                isUploading={uploadingField === "heroImage"}
-              />
-              <ImageUploadField
-                label="Изображение о художнице"
-                value={settingsDraft.aboutImage}
-                onChange={(value) => updateSettingsDraft("aboutImage", value)}
-                onUpload={(file) =>
-                  uploadImage(file, (result) => updateSettingsDraft("aboutImage", result.url), "aboutImage")
-                }
-                isUploading={uploadingField === "aboutImage"}
-              />
-              <ToggleField
-                label="Показывать категории картин"
-                checked={settingsDraft.showWorkCategories !== false}
-                onChange={(value) => updateSettingsDraft("showWorkCategories", value)}
-              />
-              <div className="border-t border-[#121212]/10 pt-8 space-y-8">
-                <div>
-                  <span className="block text-[11px] uppercase tracking-widest text-[#121212]/35 mb-2">
-                    Раздел интерьеров
-                  </span>
-                  <p className="text-xs text-[#121212]/35">
-                    Эти тексты выводятся на странице «Интерьеры» над списком проектов.
-                  </p>
-                </div>
-                <TextField
-                  label="Заголовок"
-                  value={settingsDraft.interiorsTitle || ""}
-                  onChange={(value) => updateSettingsDraft("interiorsTitle", value)}
-                />
-                <TextAreaField
-                  label="Подзаголовок"
-                  rows={3}
-                  value={settingsDraft.interiorsSubtitle || ""}
-                  onChange={(value) => updateSettingsDraft("interiorsSubtitle", value)}
-                />
-                <TextAreaField
-                  label="Вводный текст"
-                  rows={4}
-                  value={settingsDraft.interiorsIntro || ""}
-                  onChange={(value) => updateSettingsDraft("interiorsIntro", value)}
-                />
-                <TextAreaField
-                  label="Услуги, по одной строке"
-                  rows={6}
-                  value={settingsDraft.interiorsServices || ""}
-                  onChange={(value) => updateSettingsDraft("interiorsServices", value)}
-                />
-                <TextAreaField
-                  label="Процесс: этап | описание"
-                  rows={8}
-                  value={settingsDraft.interiorsProcess || ""}
-                  onChange={(value) => updateSettingsDraft("interiorsProcess", value)}
-                />
-                <TextAreaField
-                  label="Заметка про искусство"
-                  rows={4}
-                  value={settingsDraft.interiorsArtNote || ""}
-                  onChange={(value) => updateSettingsDraft("interiorsArtNote", value)}
-                />
-                <TextField
-                  label="SEO заголовок интерьеров"
-                  value={settingsDraft.interiorsSeoTitle || ""}
-                  onChange={(value) => updateSettingsDraft("interiorsSeoTitle", value)}
-                />
-                <TextAreaField
-                  label="SEO описание интерьеров"
-                  rows={4}
-                  value={settingsDraft.interiorsSeoDescription || ""}
-                  onChange={(value) => updateSettingsDraft("interiorsSeoDescription", value)}
-                />
-                <TextAreaField
-                  label="SEO ключевые слова"
-                  rows={3}
-                  value={settingsDraft.interiorsSeoKeywords || ""}
-                  onChange={(value) => updateSettingsDraft("interiorsSeoKeywords", value)}
-                />
+            <div className="-mx-6 overflow-x-auto px-6 md:mx-0 md:px-0">
+              <div
+                role="tablist"
+                aria-label="Разделы настроек сайта"
+                className="flex min-w-max border-b border-[#121212]/10"
+              >
+                {settingsSections.map((section) => (
+                  <button
+                    key={section.id}
+                    id={`settings-tab-${section.id}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={settingsSection === section.id}
+                    aria-controls={`settings-panel-${section.id}`}
+                    onClick={() => setSettingsSection(section.id)}
+                    className={`min-h-11 px-5 text-xs uppercase tracking-widest border-b transition-colors ${
+                      settingsSection === section.id
+                        ? "border-[#121212] text-[#121212]"
+                        : "border-transparent text-[#121212]/35 hover:text-[#121212]"
+                    }`}
+                  >
+                    {section.label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            <div className="lg:col-span-4 space-y-8">
-              <TextField
-                label="Email"
-                type="email"
-                value={settingsDraft.contactEmail}
-                onChange={(value) => updateSettingsDraft("contactEmail", value)}
-              />
-              <TextField
-                label="Заголовок адреса"
-                value={settingsDraft.studioTitle}
-                onChange={(value) => updateSettingsDraft("studioTitle", value)}
-              />
-              <TextField
-                label="Адрес"
-                value={settingsDraft.studioAddress}
-                onChange={(value) => updateSettingsDraft("studioAddress", value)}
-              />
-              <TextField
-                label="Примечание"
-                value={settingsDraft.studioNote}
-                onChange={(value) => updateSettingsDraft("studioNote", value)}
-              />
-              <TextField
-                label="Instagram"
-                value={settingsDraft.instagramUrl}
-                onChange={(value) => updateSettingsDraft("instagramUrl", value)}
-              />
-              <TextField
-                label="Telegram"
-                value={settingsDraft.telegramUrl}
-                onChange={(value) => updateSettingsDraft("telegramUrl", value)}
-              />
-            </div>
-
-            <div className="lg:col-span-3 space-y-8">
-              <TextField
-                label="Заголовок блока"
-                value={settingsDraft.aboutTitle}
-                onChange={(value) => updateSettingsDraft("aboutTitle", value)}
-              />
-              <TextAreaField
-                label="Абзац 1"
-                rows={7}
-                value={settingsDraft.aboutParagraph1}
-                onChange={(value) => updateSettingsDraft("aboutParagraph1", value)}
-              />
-              <TextAreaField
-                label="Абзац 2"
-                rows={5}
-                value={settingsDraft.aboutParagraph2}
-                onChange={(value) => updateSettingsDraft("aboutParagraph2", value)}
-              />
-              <div className="border-t border-[#121212]/10 pt-8 space-y-8">
-                <div>
-                  <span className="block text-[11px] uppercase tracking-widest text-[#121212]/35 mb-2">
-                    Биография
-                  </span>
-                  <p className="text-xs text-[#121212]/35">
-                    Для списков используйте формат: год или период, затем вертикальная черта, затем текст.
+            {settingsSection === "home" && (
+              <section
+                id="settings-panel-home"
+                role="tabpanel"
+                aria-labelledby="settings-tab-home"
+                className="max-w-6xl"
+              >
+                <div className="mb-10">
+                  <h2 className="font-display text-2xl italic text-[#121212]">Главная</h2>
+                  <p className="mt-2 text-sm text-[#121212]/40">
+                    Первый экран, блок о художнице и отображение категорий картин.
                   </p>
                 </div>
-                <TextField
-                  label="Подпись под фото"
-                  value={settingsDraft.biographyPortraitCaption}
-                  onChange={(value) => updateSettingsDraft("biographyPortraitCaption", value)}
-                />
-                <TextAreaField
-                  label="Биография, абзац 1"
-                  rows={6}
-                  value={settingsDraft.biographyIntro1}
-                  onChange={(value) => updateSettingsDraft("biographyIntro1", value)}
-                />
-                <TextAreaField
-                  label="Биография, абзац 2"
-                  rows={6}
-                  value={settingsDraft.biographyIntro2}
-                  onChange={(value) => updateSettingsDraft("biographyIntro2", value)}
-                />
-                <TextAreaField
-                  label="Хронология"
-                  rows={10}
-                  value={settingsDraft.biographyTimeline}
-                  onChange={(value) => updateSettingsDraft("biographyTimeline", value)}
-                />
-                <TextAreaField
-                  label="Выставки"
-                  rows={8}
-                  value={settingsDraft.biographyExhibitions}
-                  onChange={(value) => updateSettingsDraft("biographyExhibitions", value)}
-                />
-              </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
+                  <div className="space-y-8">
+                    <TextField
+                      label="Имя в шапке"
+                      value={settingsDraft.artistName}
+                      onChange={(value) => updateSettingsDraft("artistName", value)}
+                      required
+                    />
+                    <div className="grid grid-cols-2 gap-5">
+                      <TextField
+                        label="Имя"
+                        value={settingsDraft.heroFirstName}
+                        onChange={(value) => updateSettingsDraft("heroFirstName", value)}
+                      />
+                      <TextField
+                        label="Фамилия"
+                        value={settingsDraft.heroLastName}
+                        onChange={(value) => updateSettingsDraft("heroLastName", value)}
+                      />
+                    </div>
+                    <TextAreaField
+                      label="Подзаголовок"
+                      value={settingsDraft.heroSubtitle}
+                      onChange={(value) => updateSettingsDraft("heroSubtitle", value)}
+                    />
+                    <ImageUploadField
+                      label="Hero изображение"
+                      value={settingsDraft.heroImage}
+                      onChange={(value) => updateSettingsDraft("heroImage", value)}
+                      onUpload={(file) =>
+                        uploadImage(file, (result) => updateSettingsDraft("heroImage", result.url), "heroImage")
+                      }
+                      isUploading={uploadingField === "heroImage"}
+                    />
+                  </div>
+                  <div className="space-y-8">
+                    <TextField
+                      label="Заголовок блока о художнице"
+                      value={settingsDraft.aboutTitle}
+                      onChange={(value) => updateSettingsDraft("aboutTitle", value)}
+                    />
+                    <TextAreaField
+                      label="Абзац 1"
+                      rows={7}
+                      value={settingsDraft.aboutParagraph1}
+                      onChange={(value) => updateSettingsDraft("aboutParagraph1", value)}
+                    />
+                    <TextAreaField
+                      label="Абзац 2"
+                      rows={5}
+                      value={settingsDraft.aboutParagraph2}
+                      onChange={(value) => updateSettingsDraft("aboutParagraph2", value)}
+                    />
+                    <ImageUploadField
+                      label="Изображение о художнице"
+                      value={settingsDraft.aboutImage}
+                      onChange={(value) => updateSettingsDraft("aboutImage", value)}
+                      onUpload={(file) =>
+                        uploadImage(file, (result) => updateSettingsDraft("aboutImage", result.url), "aboutImage")
+                      }
+                      isUploading={uploadingField === "aboutImage"}
+                    />
+                    <ToggleField
+                      label="Показывать категории картин"
+                      checked={settingsDraft.showWorkCategories !== false}
+                      onChange={(value) => updateSettingsDraft("showWorkCategories", value)}
+                    />
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {settingsSection === "biography" && (
+              <section
+                id="settings-panel-biography"
+                role="tabpanel"
+                aria-labelledby="settings-tab-biography"
+                className="max-w-6xl"
+              >
+                <div className="mb-10">
+                  <h2 className="font-display text-2xl italic text-[#121212]">Биография</h2>
+                  <p className="mt-2 text-sm text-[#121212]/40">
+                    Основной текст, подпись к портрету, хронология и выставки.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
+                  <div className="space-y-8">
+                    <TextField
+                      label="Подпись под фото"
+                      value={settingsDraft.biographyPortraitCaption}
+                      onChange={(value) => updateSettingsDraft("biographyPortraitCaption", value)}
+                    />
+                    <TextAreaField
+                      label="Биография, абзац 1"
+                      rows={7}
+                      value={settingsDraft.biographyIntro1}
+                      onChange={(value) => updateSettingsDraft("biographyIntro1", value)}
+                    />
+                    <TextAreaField
+                      label="Биография, абзац 2"
+                      rows={7}
+                      value={settingsDraft.biographyIntro2}
+                      onChange={(value) => updateSettingsDraft("biographyIntro2", value)}
+                    />
+                  </div>
+                  <div className="space-y-8">
+                    <p className="text-xs text-[#121212]/40 leading-relaxed">
+                      Для списков используйте формат: год или период, затем вертикальная черта, затем текст.
+                    </p>
+                    <TextAreaField
+                      label="Хронология"
+                      rows={12}
+                      value={settingsDraft.biographyTimeline}
+                      onChange={(value) => updateSettingsDraft("biographyTimeline", value)}
+                    />
+                    <TextAreaField
+                      label="Выставки"
+                      rows={10}
+                      value={settingsDraft.biographyExhibitions}
+                      onChange={(value) => updateSettingsDraft("biographyExhibitions", value)}
+                    />
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {settingsSection === "contacts" && (
+              <section
+                id="settings-panel-contacts"
+                role="tabpanel"
+                aria-labelledby="settings-tab-contacts"
+                className="max-w-4xl"
+              >
+                <div className="mb-10">
+                  <h2 className="font-display text-2xl italic text-[#121212]">Контакты</h2>
+                  <p className="mt-2 text-sm text-[#121212]/40">
+                    Email, данные мастерской и ссылки на социальные сети.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-x-12">
+                  <TextField
+                    label="Email"
+                    type="email"
+                    value={settingsDraft.contactEmail}
+                    onChange={(value) => updateSettingsDraft("contactEmail", value)}
+                  />
+                  <TextField
+                    label="Заголовок адреса"
+                    value={settingsDraft.studioTitle}
+                    onChange={(value) => updateSettingsDraft("studioTitle", value)}
+                  />
+                  <TextField
+                    label="Адрес"
+                    value={settingsDraft.studioAddress}
+                    onChange={(value) => updateSettingsDraft("studioAddress", value)}
+                  />
+                  <TextField
+                    label="Примечание"
+                    value={settingsDraft.studioNote}
+                    onChange={(value) => updateSettingsDraft("studioNote", value)}
+                  />
+                  <TextField
+                    label="Instagram"
+                    value={settingsDraft.instagramUrl}
+                    onChange={(value) => updateSettingsDraft("instagramUrl", value)}
+                  />
+                  <TextField
+                    label="Telegram"
+                    value={settingsDraft.telegramUrl}
+                    onChange={(value) => updateSettingsDraft("telegramUrl", value)}
+                  />
+                </div>
+              </section>
+            )}
+
+            {settingsSection === "interiors" && (
+              <section
+                id="settings-panel-interiors"
+                role="tabpanel"
+                aria-labelledby="settings-tab-interiors"
+                className="max-w-6xl"
+              >
+                <div className="mb-10">
+                  <h2 className="font-display text-2xl italic text-[#121212]">Интерьеры</h2>
+                  <p className="mt-2 text-sm text-[#121212]/40">
+                    Общие тексты страницы интерьеров, список услуг и этапы работы.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
+                  <div className="space-y-8">
+                    <TextField
+                      label="Заголовок"
+                      value={settingsDraft.interiorsTitle || ""}
+                      onChange={(value) => updateSettingsDraft("interiorsTitle", value)}
+                    />
+                    <TextAreaField
+                      label="Подзаголовок"
+                      rows={3}
+                      value={settingsDraft.interiorsSubtitle || ""}
+                      onChange={(value) => updateSettingsDraft("interiorsSubtitle", value)}
+                    />
+                    <TextAreaField
+                      label="Вводный текст"
+                      rows={5}
+                      value={settingsDraft.interiorsIntro || ""}
+                      onChange={(value) => updateSettingsDraft("interiorsIntro", value)}
+                    />
+                    <TextAreaField
+                      label="Заметка про искусство"
+                      rows={5}
+                      value={settingsDraft.interiorsArtNote || ""}
+                      onChange={(value) => updateSettingsDraft("interiorsArtNote", value)}
+                    />
+                  </div>
+                  <div className="space-y-8">
+                    <TextAreaField
+                      label="Услуги, по одной строке"
+                      rows={8}
+                      value={settingsDraft.interiorsServices || ""}
+                      onChange={(value) => updateSettingsDraft("interiorsServices", value)}
+                    />
+                    <TextAreaField
+                      label="Процесс: этап | описание"
+                      rows={13}
+                      value={settingsDraft.interiorsProcess || ""}
+                      onChange={(value) => updateSettingsDraft("interiorsProcess", value)}
+                    />
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {settingsSection === "seo" && (
+              <section
+                id="settings-panel-seo"
+                role="tabpanel"
+                aria-labelledby="settings-tab-seo"
+                className="max-w-3xl"
+              >
+                <div className="mb-10">
+                  <h2 className="font-display text-2xl italic text-[#121212]">SEO</h2>
+                  <p className="mt-2 text-sm text-[#121212]/40 leading-relaxed">
+                    Метаданные раздела интерьеров для поисковой выдачи и публикации ссылок.
+                  </p>
+                </div>
+                <div className="space-y-8">
+                  <TextField
+                    label="SEO заголовок интерьеров"
+                    value={settingsDraft.interiorsSeoTitle || ""}
+                    onChange={(value) => updateSettingsDraft("interiorsSeoTitle", value)}
+                  />
+                  <TextAreaField
+                    label="SEO описание интерьеров"
+                    rows={5}
+                    value={settingsDraft.interiorsSeoDescription || ""}
+                    onChange={(value) => updateSettingsDraft("interiorsSeoDescription", value)}
+                  />
+                  <TextAreaField
+                    label="SEO ключевые слова"
+                    rows={4}
+                    value={settingsDraft.interiorsSeoKeywords || ""}
+                    onChange={(value) => updateSettingsDraft("interiorsSeoKeywords", value)}
+                  />
+                </div>
+              </section>
+            )}
+
+            <div className="sticky bottom-0 z-20 -mx-6 border-t border-[#121212]/10 bg-white/95 px-6 py-4 backdrop-blur md:mx-0 md:px-0">
               <button
                 type="submit"
                 className="inline-flex items-center gap-2 min-h-11 px-5 bg-[#121212] text-white text-xs tracking-widest uppercase hover:bg-[#121212]/80 transition-colors"
               >
                 <Save size={15} />
-                Сохранить
+                Сохранить настройки
               </button>
             </div>
           </form>
